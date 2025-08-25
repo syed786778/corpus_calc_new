@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retirement Corpus Calculator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #e3f2fd 0%, #e8eaf6 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 40px;
+        }
+
+        .header {
+            text-center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            color: #1565c0;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+        }
+
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
+        }
+
+        .input-section {
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+            padding: 30px;
+            border-radius: 15px;
+        }
+
+        .input-section h2 {
+            color: #374151;
+            margin-bottom: 25px;
+            font-size: 1.4rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .helper-text {
+            font-size: 0.8rem;
+            color: #6b7280;
+            margin-top: 5px;
+        }
+
+        .results-section {
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            padding: 30px;
+            border-radius: 15px;
+        }
+
+        .results-section h2 {
+            color: #374151;
+            margin-bottom: 25px;
+            font-size: 1.4rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .result-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border-left: 4px solid;
+        }
+
+        .result-card.primary {
+            border-color: #3b82f6;
+        }
+
+        .result-card.success {
+            border-color: #10b981;
+        }
+
+        .result-card.info {
+            border-color: #06b6d4;
+        }
+
+        .result-card.warning {
+            border-color: #f59e0b;
+        }
+
+        .result-card h3 {
+            color: #374151;
+            margin-bottom: 8px;
+            font-size: 1rem;
+        }
+
+        .result-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .primary .result-value {
+            color: #3b82f6;
+        }
+
+        .success .result-value {
+            color: #10b981;
+        }
+
+        .info .result-value {
+            color: #06b6d4;
+        }
+
+        .warning .result-value {
+            color: #f59e0b;
+        }
+
+        .result-subtitle {
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+
+        .expense-comparison {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        .expense-comparison span:first-child {
+            color: #6b7280;
+        }
+
+        .expense-comparison span:last-child {
+            font-weight: 600;
+        }
+
+        .summary-card {
+            background: #e0e7ff;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 15px;
+        }
+
+        .summary-card h3 {
+            color: #1e40af;
+            margin-bottom: 10px;
+        }
+
+        .summary-card p {
+            color: #1e40af;
+            line-height: 1.5;
+        }
+
+        .placeholder {
+            text-align: center;
+            padding: 40px 20px;
+            color: #6b7280;
+        }
+
+        .placeholder .icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        .notes {
+            margin-top: 30px;
+            background: #fefce8;
+            border-left: 4px solid #f59e0b;
+            padding: 20px;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .notes h3 {
+            color: #92400e;
+            margin-bottom: 10px;
+        }
+
+        .notes ul {
+            color: #92400e;
+            padding-left: 20px;
+        }
+
+        .notes li {
+            margin-bottom: 5px;
+        }
+
+        .icon {
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>
+                <span class="icon">🏦</span>
+                Retirement Corpus Calculator
+            </h1>
+            <p>Calculate how much you need to save for a comfortable retirement</p>
+        </div>
+
+        <div class="main-grid">
+            <!-- Input Section -->
+            <div class="input-section">
+                <h2>
+                    <span class="icon">🧮</span>
+                    Input Details
+                </h2>
+                
+                <div class="form-group">
+                    <label for="currentExpenses">Current Monthly Expenses (₹)</label>
+                    <input type="number" id="currentExpenses" placeholder="50,000" oninput="calculateRetirement()">
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="currentAge">Current Age</label>
+                        <input type="number" id="currentAge" placeholder="30" oninput="calculateRetirement()">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="retirementAge">Retirement Age</label>
+                        <input type="number" id="retirementAge" placeholder="60" oninput="calculateRetirement()">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="corpusDuration">Post-Retirement Duration (Years)</label>
+                    <input type="number" id="corpusDuration" placeholder="25" oninput="calculateRetirement()">
+                    <div class="helper-text">How many years should your corpus last?</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="inflationRate">Expected Inflation Rate (% per annum)</label>
+                    <input type="number" id="inflationRate" value="7" step="0.1" placeholder="7.0" oninput="calculateRetirement()">
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div class="results-section">
+                <h2>
+                    <span class="icon">📈</span>
+                    Retirement Projection
+                </h2>
+                
+                <div id="results">
+                    <div class="placeholder">
+                        <div class="icon">🏦</div>
+                        <h3>Enter Your Details</h3>
+                        <p>Fill in all the fields to see your retirement corpus calculation</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="notes">
+            <h3>Important Notes:</h3>
+            <ul>
+                <li>This calculation assumes constant inflation rate throughout</li>
+                <li>Consider consulting a financial advisor for comprehensive retirement planning</li>
+                <li>Factor in healthcare costs, which typically increase with age</li>
+                <li>Review and update your calculations periodically</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('en-IN', {
+                style: 'currency',
+                currency: 'INR',
+                maximumFractionDigits: 0
+            }).format(amount);
+        }
+
+        function calculateRetirement() {
+            const currentExpenses = parseFloat(document.getElementById('currentExpenses').value);
+            const currentAge = parseInt(document.getElementById('currentAge').value);
+            const retirementAge = parseInt(document.getElementById('retirementAge').value);
+            const corpusDuration = parseInt(document.getElementById('corpusDuration').value);
+            const inflationRate = parseFloat(document.getElementById('inflationRate').value) / 100;
+
+            const resultsDiv = document.getElementById('results');
+
+            if (!currentExpenses || !currentAge || !retirementAge || !corpusDuration || retirementAge <= currentAge) {
+                resultsDiv.innerHTML = `
+                    <div class="placeholder">
+                        <div class="icon">🏦</div>
+                        <h3>Enter Your Details</h3>
+                        <p>Fill in all the fields to see your retirement corpus calculation</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const yearsToRetirement = retirementAge - currentAge;
+            const annualExpenses = currentExpenses * 12;
+
+            // Calculate future value of current expenses at retirement
+            const futureAnnualExpenses = annualExpenses * Math.pow(1 + inflationRate, yearsToRetirement);
+            
+            // Calculate present value of annuity needed for retirement years
+            const presentValueFactor = (1 - Math.pow(1 + inflationRate, -corpusDuration)) / inflationRate;
+            const totalCorpusRequired = futureAnnualExpenses * presentValueFactor;
+
+            // Monthly withdrawal amount (future value)
+            const monthlyWithdrawal = futureAnnualExpenses / 12;
+            const inflationAdjustedExpenses = futureAnnualExpenses / 12;
+
+            resultsDiv.innerHTML = `
+                <div class="result-card primary">
+                    <h3>Years to Retirement</h3>
+                    <div class="result-value">📅 ${yearsToRetirement} years</div>
+                </div>
+
+                <div class="result-card success">
+                    <h3>Total Corpus Required</h3>
+                    <div class="result-value">${formatCurrency(totalCorpusRequired)}</div>
+                    <div class="result-subtitle">Amount needed at retirement</div>
+                </div>
+
+                <div class="result-card info">
+                    <h3>Monthly Withdrawal</h3>
+                    <div class="result-value">${formatCurrency(monthlyWithdrawal)}</div>
+                    <div class="result-subtitle">Inflation-adjusted monthly amount</div>
+                </div>
+
+                <div class="result-card warning">
+                    <h3>Expense Growth Impact</h3>
+                    <div class="expense-comparison">
+                        <span>Current Monthly:</span>
+                        <span>${formatCurrency(currentExpenses)}</span>
+                    </div>
+                    <div class="expense-comparison">
+                        <span>At Retirement:</span>
+                        <span>${formatCurrency(inflationAdjustedExpenses)}</span>
+                    </div>
+                    <div class="helper-text">
+                        Growth factor: ${(inflationAdjustedExpenses / currentExpenses).toFixed(2)}x
+                    </div>
+                </div>
+
+                <div class="summary-card">
+                    <h3>Summary</h3>
+                    <p>
+                        To maintain your current lifestyle of <strong>${formatCurrency(currentExpenses)}/month</strong> 
+                        for <strong>${corpusDuration} years</strong> after retirement, 
+                        you need to accumulate <strong>${formatCurrency(totalCorpusRequired)}</strong> 
+                        by age ${retirementAge}.
+                    </p>
+                </div>
+            `;
+        }
+
+        // Initialize calculation on page load if default values are present
+        window.onload = function() {
+            calculateRetirement();
+        };
+    </script>
+</body>
+</html>
