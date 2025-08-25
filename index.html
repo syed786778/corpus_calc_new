@@ -299,6 +299,12 @@
                     <label for="inflationRate">Expected Inflation Rate (% per annum)</label>
                     <input type="number" id="inflationRate" value="7" step="0.1" placeholder="7.0" oninput="calculateRetirement()">
                 </div>
+
+                <div class="form-group">
+                    <label for="postRetirementReturn">Expected Return on Corpus Post-Retirement (% per annum)</label>
+                    <input type="number" id="postRetirementReturn" value="8" step="0.1" placeholder="8.0" oninput="calculateRetirement()">
+                    <div class="helper-text">Return expected from investments during retirement years</div>
+                </div>
             </div>
 
             <!-- Results Section -->
@@ -321,10 +327,12 @@
         <div class="notes">
             <h3>Important Notes:</h3>
             <ul>
-                <li>This calculation assumes constant inflation rate throughout</li>
-                <li>Consider consulting a financial advisor for comprehensive retirement planning</li>
-                <li>Factor in healthcare costs, which typically increase with age</li>
-                <li>Review and update your calculations periodically</li>
+                <li>This calculation assumes constant inflation and return rates throughout</li>
+                <li>Post-retirement returns help reduce corpus requirement significantly</li>
+                <li>Consider a diversified investment approach for stable returns</li>
+                <li>Healthcare costs typically increase with age and may exceed inflation</li>
+                <li>Review and update your calculations periodically based on market conditions</li>
+                <li>Consult a financial advisor for comprehensive retirement planning</li>
             </ul>
         </div>
     </div>
@@ -344,6 +352,7 @@
             const retirementAge = parseInt(document.getElementById('retirementAge').value);
             const corpusDuration = parseInt(document.getElementById('corpusDuration').value);
             const inflationRate = parseFloat(document.getElementById('inflationRate').value) / 100;
+            const postRetirementReturn = parseFloat(document.getElementById('postRetirementReturn').value) / 100;
 
             const resultsDiv = document.getElementById('results');
 
@@ -364,13 +373,42 @@
             // Calculate future value of current expenses at retirement
             const futureAnnualExpenses = annualExpenses * Math.pow(1 + inflationRate, yearsToRetirement);
             
-            // Calculate present value of annuity needed for retirement years
-            const presentValueFactor = (1 - Math.pow(1 + inflationRate, -corpusDuration)) / inflationRate;
-            const totalCorpusRequired = futureAnnualExpenses * presentValueFactor;
+            // Calculate corpus required considering post-retirement returns
+            // Using present value of growing annuity formula considering returns vs inflation
+            let totalCorpusRequired;
+            const realReturnRate = (postRetirementReturn - inflationRate) / (1 + inflationRate); // Real return after inflation
+            
+            if (Math.abs(postRetirementReturn - inflationRate) < 0.0001) {
+                // If return equals inflation, simple multiplication
+                totalCorpusRequired = futureAnnualExpenses * corpusDuration;
+            } else {
+                // Present value of annuity with different discount rate
+                const monthlyReturn = postRetirementReturn / 12;
+                const monthlyInflation = inflationRate / 12;
+                const monthlyWithdrawalAtStart = futureAnnualExpenses / 12;
+                
+                // Calculate required corpus using PMT formula for growing annuity
+                // Where withdrawals grow with inflation but corpus earns returns
+                let corpusNeeded = 0;
+                let monthlyExpenseAtRetirement = monthlyWithdrawalAtStart;
+                
+                for (let month = 1; month <= corpusDuration * 12; month++) {
+                    // Present value of this month's withdrawal discounted at return rate
+                    const pvOfWithdrawal = monthlyExpenseAtRetirement / Math.pow(1 + monthlyReturn, month);
+                    corpusNeeded += pvOfWithdrawal;
+                    // Expense grows with inflation each month
+                    monthlyExpenseAtRetirement *= (1 + monthlyInflation);
+                }
+                totalCorpusRequired = corpusNeeded;
+            }
 
-            // Monthly withdrawal amount (future value)
+            // Monthly withdrawal amount (future value at start of retirement)
             const monthlyWithdrawal = futureAnnualExpenses / 12;
             const inflationAdjustedExpenses = futureAnnualExpenses / 12;
+
+            // Calculate corpus without considering returns for comparison
+            const corpusWithoutReturns = futureAnnualExpenses * corpusDuration;
+            const savingsFromReturns = corpusWithoutReturns - totalCorpusRequired;
 
             resultsDiv.innerHTML = `
                 <div class="result-card primary">
@@ -381,13 +419,29 @@
                 <div class="result-card success">
                     <h3>Total Corpus Required</h3>
                     <div class="result-value">${formatCurrency(totalCorpusRequired)}</div>
-                    <div class="result-subtitle">Amount needed at retirement</div>
+                    <div class="result-subtitle">Amount needed at retirement (considering ${(postRetirementReturn * 100).toFixed(1)}% returns)</div>
                 </div>
 
                 <div class="result-card info">
                     <h3>Monthly Withdrawal</h3>
                     <div class="result-value">${formatCurrency(monthlyWithdrawal)}</div>
-                    <div class="result-subtitle">Inflation-adjusted monthly amount</div>
+                    <div class="result-subtitle">Starting monthly amount (grows with inflation)</div>
+                </div>
+
+                <div class="result-card warning">
+                    <h3>Impact of Post-Retirement Returns</h3>
+                    <div class="expense-comparison">
+                        <span>Without Returns:</span>
+                        <span>${formatCurrency(corpusWithoutReturns)}</span>
+                    </div>
+                    <div class="expense-comparison">
+                        <span>With ${(postRetirementReturn * 100).toFixed(1)}% Returns:</span>
+                        <span>${formatCurrency(totalCorpusRequired)}</span>
+                    </div>
+                    <div class="expense-comparison" style="color: #10b981; font-weight: bold;">
+                        <span>Savings from Returns:</span>
+                        <span>${formatCurrency(savingsFromReturns)}</span>
+                    </div>
                 </div>
 
                 <div class="result-card warning">
@@ -411,7 +465,9 @@
                         To maintain your current lifestyle of <strong>${formatCurrency(currentExpenses)}/month</strong> 
                         for <strong>${corpusDuration} years</strong> after retirement, 
                         you need to accumulate <strong>${formatCurrency(totalCorpusRequired)}</strong> 
-                        by age ${retirementAge}.
+                        by age ${retirementAge}. Your corpus will earn <strong>${(postRetirementReturn * 100).toFixed(1)}%</strong> 
+                        returns post-retirement, saving you <strong>${formatCurrency(savingsFromReturns)}</strong> 
+                        compared to keeping money idle.
                     </p>
                 </div>
             `;
