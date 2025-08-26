@@ -333,11 +333,13 @@
         <div class="notes">
             <h3>Important Notes:</h3>
             <ul>
+                <li>SIP calculations assume consistent monthly investments and returns</li>
                 <li>This calculation assumes constant inflation and return rates throughout</li>
                 <li>Post-retirement returns help reduce corpus requirement significantly</li>
                 <li>Consider a diversified investment approach for stable returns</li>
                 <li>Healthcare costs typically increase with age and may exceed inflation</li>
-                <li>Review and update your calculations periodically based on market conditions</li>
+                <li>Review and adjust your SIP amount annually based on income growth</li>
+                <li>Consider increasing SIP by 10-15% annually to beat inflation</li>
                 <li>Consult a financial advisor for comprehensive retirement planning</li>
             </ul>
         </div>
@@ -353,12 +355,13 @@
         }
 
         function calculateRetirement() {
-            const currentExpenses = parseFloat(document.getElementById('currentExpenses').value);
-            const currentAge = parseInt(document.getElementById('currentAge').value);
-            const retirementAge = parseInt(document.getElementById('retirementAge').value);
-            const corpusDuration = parseInt(document.getElementById('corpusDuration').value);
-            const inflationRate = parseFloat(document.getElementById('inflationRate').value) / 100;
-            const postRetirementReturn = parseFloat(document.getElementById('postRetirementReturn').value) / 100;
+            const currentExpenses = parseFloat(document.getElementById('currentExpenses').value) || 0;
+            const currentAge = parseInt(document.getElementById('currentAge').value) || 0;
+            const retirementAge = parseInt(document.getElementById('retirementAge').value) || 0;
+            const corpusDuration = parseInt(document.getElementById('corpusDuration').value) || 0;
+            const inflationRate = parseFloat(document.getElementById('inflationRate').value) / 100 || 0.07;
+            const postRetirementReturn = parseFloat(document.getElementById('postRetirementReturn').value) / 100 || 0.08;
+            const sipReturn = parseFloat(document.getElementById('sipReturn').value) / 100 || 0.12;
 
             const resultsDiv = document.getElementById('results');
 
@@ -380,39 +383,45 @@
             const futureAnnualExpenses = annualExpenses * Math.pow(1 + inflationRate, yearsToRetirement);
             
             // Calculate corpus required considering post-retirement returns
-            // Using present value of growing annuity formula considering returns vs inflation
             let totalCorpusRequired;
-            const realReturnRate = (postRetirementReturn - inflationRate) / (1 + inflationRate); // Real return after inflation
             
             if (Math.abs(postRetirementReturn - inflationRate) < 0.0001) {
-                // If return equals inflation, simple multiplication
                 totalCorpusRequired = futureAnnualExpenses * corpusDuration;
             } else {
-                // Present value of annuity with different discount rate
                 const monthlyReturn = postRetirementReturn / 12;
                 const monthlyInflation = inflationRate / 12;
                 const monthlyWithdrawalAtStart = futureAnnualExpenses / 12;
                 
-                // Calculate required corpus using PMT formula for growing annuity
-                // Where withdrawals grow with inflation but corpus earns returns
                 let corpusNeeded = 0;
                 let monthlyExpenseAtRetirement = monthlyWithdrawalAtStart;
                 
                 for (let month = 1; month <= corpusDuration * 12; month++) {
-                    // Present value of this month's withdrawal discounted at return rate
                     const pvOfWithdrawal = monthlyExpenseAtRetirement / Math.pow(1 + monthlyReturn, month);
                     corpusNeeded += pvOfWithdrawal;
-                    // Expense grows with inflation each month
                     monthlyExpenseAtRetirement *= (1 + monthlyInflation);
                 }
                 totalCorpusRequired = corpusNeeded;
             }
 
-            // Monthly withdrawal amount (future value at start of retirement)
-            const monthlyWithdrawal = futureAnnualExpenses / 12;
-            const inflationAdjustedExpenses = futureAnnualExpenses / 12;
+            // Calculate monthly SIP required to achieve the corpus
+            const monthsToRetirement = yearsToRetirement * 12;
+            const monthlySipReturn = sipReturn / 12;
+            
+            let monthlySipRequired = 0;
+            if (Math.abs(sipReturn) < 0.0001) {
+                monthlySipRequired = totalCorpusRequired / monthsToRetirement;
+            } else {
+                const futureValueFactor = (Math.pow(1 + monthlySipReturn, monthsToRetirement) - 1) / monthlySipReturn;
+                monthlySipRequired = totalCorpusRequired / futureValueFactor;
+            }
 
-            // Calculate corpus without considering returns for comparison
+            // Calculate total SIP investment and returns earned
+            const totalSipInvestment = monthlySipRequired * monthsToRetirement;
+            const returnsFromSip = totalCorpusRequired - totalSipInvestment;
+
+            // Monthly withdrawal amount and other calculations
+            const monthlyWithdrawal = futureAnnualExpenses / 12;
+            const inflationAdjustedExpenses = monthlyWithdrawal;
             const corpusWithoutReturns = futureAnnualExpenses * corpusDuration;
             const savingsFromReturns = corpusWithoutReturns - totalCorpusRequired;
 
@@ -428,10 +437,35 @@
                     <div class="result-subtitle">Amount needed at retirement (considering ${(postRetirementReturn * 100).toFixed(1)}% returns)</div>
                 </div>
 
+                <div class="result-card info" style="border-color: #8b5cf6;">
+                    <h3>💰 Monthly SIP Required</h3>
+                    <div class="result-value" style="color: #8b5cf6;">${formatCurrency(monthlySipRequired)}</div>
+                    <div class="result-subtitle">SIP amount needed for ${yearsToRetirement} years @ ${(sipReturn * 100).toFixed(1)}% returns</div>
+                </div>
+
                 <div class="result-card info">
                     <h3>Monthly Withdrawal</h3>
                     <div class="result-value">${formatCurrency(monthlyWithdrawal)}</div>
                     <div class="result-subtitle">Starting monthly amount (grows with inflation)</div>
+                </div>
+
+                <div class="result-card warning">
+                    <h3>SIP Investment Breakdown</h3>
+                    <div class="expense-comparison">
+                        <span>Total SIP Investment:</span>
+                        <span>${formatCurrency(totalSipInvestment)}</span>
+                    </div>
+                    <div class="expense-comparison">
+                        <span>Returns from SIP:</span>
+                        <span style="color: #10b981; font-weight: bold;">${formatCurrency(returnsFromSip)}</span>
+                    </div>
+                    <div class="expense-comparison">
+                        <span>Final Corpus Value:</span>
+                        <span>${formatCurrency(totalCorpusRequired)}</span>
+                    </div>
+                    <div class="helper-text">
+                        Return multiplier: ${(totalCorpusRequired / totalSipInvestment).toFixed(2)}x your investment
+                    </div>
                 </div>
 
                 <div class="result-card warning">
@@ -466,14 +500,20 @@
                 </div>
 
                 <div class="summary-card">
-                    <h3>Summary</h3>
+                    <h3>Complete Retirement Plan</h3>
                     <p>
-                        To maintain your current lifestyle of <strong>${formatCurrency(currentExpenses)}/month</strong> 
-                        for <strong>${corpusDuration} years</strong> after retirement, 
-                        you need to accumulate <strong>${formatCurrency(totalCorpusRequired)}</strong> 
-                        by age ${retirementAge}. Your corpus will earn <strong>${(postRetirementReturn * 100).toFixed(1)}%</strong> 
-                        returns post-retirement, saving you <strong>${formatCurrency(savingsFromReturns)}</strong> 
-                        compared to keeping money idle.
+                        <strong>Step 1:</strong> Start a monthly SIP of <strong>${formatCurrency(monthlySipRequired)}</strong> 
+                        for ${yearsToRetirement} years at <strong>${(sipReturn * 100).toFixed(1)}%</strong> returns.<br><br>
+                        
+                        <strong>Step 2:</strong> This will create a corpus of <strong>${formatCurrency(totalCorpusRequired)}</strong> 
+                        by age ${retirementAge}.<br><br>
+                        
+                        <strong>Step 3:</strong> Withdraw <strong>${formatCurrency(monthlyWithdrawal)}/month</strong> 
+                        (growing with inflation) while earning <strong>${(postRetirementReturn * 100).toFixed(1)}%</strong> 
+                        returns for ${corpusDuration} years.<br><br>
+                        
+                        <strong>Total Investment:</strong> ${formatCurrency(totalSipInvestment)} | 
+                        <strong>Total Returns:</strong> ${formatCurrency(returnsFromSip)}
                     </p>
                 </div>
             `;
